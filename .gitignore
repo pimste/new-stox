@@ -40,5 +40,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# database
-/data
+# Include the data directory for newsletter functionality
+# But exclude the actual database file for security
+/data/*.db
+!/data/.gitkeep

@@ -396,7 +396,7 @@ export function HomeContent() {
       {/* Visit CTA */}
       <section className="relative">
         <div className="absolute inset-0 z-10 bg-gradient-to-r from-black/70 to-black/30" />
-        <div className="relative aspect-[3/4] sm:aspect-[3/4] md:aspect-video md:aspect-[2.5/1]">
+        <div className="relative aspect-[9/8] sm:aspect-video md:aspect-[3.5/1]">
           <Image
             src={isMobile ? "/images/pexels-karolina-grabowska-6275959.webp" : "/images/pexels-cottonbro-5263319.webp"}
             alt="Stijlvolle gevel van de STOX boutique in Elsloo"
