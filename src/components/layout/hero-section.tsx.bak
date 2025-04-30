@@ -4,37 +4,18 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
-import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 
 export function HeroSection() {
-  const [isMobile, setIsMobile] = useState(false);
-
-  // Check if we're on mobile
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    // Set initial value
-    handleResize();
-    
-    // Add event listener
-    window.addEventListener('resize', handleResize);
-    
-    // Clean up
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
   return (
     <div className="relative overflow-hidden">
       {/* Gradient overlay with improved aesthetics */}
       <div className="absolute inset-0 z-10 bg-gradient-to-r from-black/80 via-black/60 to-transparent" />
       
-      <div className="relative aspect-[7/10] sm:aspect-[4/5] md:aspect-[16/9] md:aspect-[21/9]">
+      <div className="relative aspect-[16/9] md:aspect-[21/9]">
         <Image
-          src={isMobile ? "/images/pexels-karolina-grabowska-4711886.webp" : "/images/header.webp"}
+          src="/images/header.webp"
           alt="STOX boutique - exclusieve mode en persoonlijk stijladvies in Elsloo"
           fill
           priority
@@ -71,7 +52,7 @@ export function HeroSection() {
               transition={{ duration: 0.5, delay: 0.6 }}
             >
               <Button asChild size="lg" className="bg-white text-black hover:bg-white/90 transition-all duration-300 group">
-                <Link href="/over-ons" className="flex items-center gap-2">
+                <Link href="/about" className="flex items-center gap-2">
                   Ontdek Ons Verhaal
                   <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
                 </Link>

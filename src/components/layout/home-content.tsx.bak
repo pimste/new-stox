@@ -4,7 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowRight, Clock, Gift, Users } from "lucide-react";
-import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 
@@ -59,24 +58,6 @@ const testimonials = [
 ];
 
 export function HomeContent() {
-  const [isMobile, setIsMobile] = useState(false);
-
-  // Check if we're on mobile
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    // Set initial value
-    handleResize();
-    
-    // Add event listener
-    window.addEventListener('resize', handleResize);
-    
-    // Clean up
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
   return (
     <>
       {/* Boutique Introduction with Animations */}
@@ -396,9 +377,9 @@ export function HomeContent() {
       {/* Visit CTA */}
       <section className="relative">
         <div className="absolute inset-0 z-10 bg-gradient-to-r from-black/70 to-black/30" />
-        <div className="relative aspect-[3/4] sm:aspect-[3/4] md:aspect-video md:aspect-[2.5/1]">
+        <div className="relative aspect-video md:aspect-[2.5/1]">
           <Image
-            src={isMobile ? "/images/pexels-karolina-grabowska-6275959.webp" : "/images/pexels-cottonbro-5263319.webp"}
+            src="/images/pexels-cottonbro-5263319.webp"
             alt="Stijlvolle gevel van de STOX boutique in Elsloo"
             fill
             sizes="100vw"
