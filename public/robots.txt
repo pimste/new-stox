@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+
+# Disallow administration areas
+Disallow: /admin/
+Disallow: /checkout/
+Disallow: /cart/
+Disallow: /account/
+
+# Sitemap
+Sitemap: https://stoxwear.nl/sitemap.xml 
