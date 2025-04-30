@@ -1,45 +1,71 @@
 import fs from 'fs';
 import path from 'path';
+import { cookies } from 'next/headers';
 
 // In-memory storage for production/serverless environments
-// Use a more persistent approach
 let inMemorySubscribers = new Map<string, { email: string; created_at: string }>();
 
 // Check if we're in production (deployed) environment
 const isProduction = process.env.NODE_ENV === 'production';
 
-// For persisting data in a serverless environment
-// This will save data to a JSON file in /tmp which persists for the instance lifetime
-const STORAGE_FILE = process.env.NODE_ENV === 'production' 
-  ? '/tmp/newsletter_subscribers.json' 
-  : path.join(process.cwd(), 'data', 'subscribers_backup.json');
+// Cookie name for storing subscribers
+const SUBSCRIBERS_COOKIE = 'newsletter_subscribers';
 
-function saveSubscribersToFile() {
+// Save subscribers to a cookie
+function saveSubscribersToCookie(subscribers: Array<{ email: string; created_at: string }>) {
   try {
-    const subscribers = Array.from(inMemorySubscribers.values());
-    fs.writeFileSync(STORAGE_FILE, JSON.stringify(subscribers));
-    console.log('Subscribers saved to file');
+    const cookieStore = cookies();
+    const subscribersJson = JSON.stringify(subscribers);
+    
+    // Set cookie with a 10-year expiry
+    cookieStore.set({
+      name: SUBSCRIBERS_COOKIE,
+      value: subscribersJson,
+      httpOnly: true,
+      path: '/',
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 60 * 60 * 24 * 365 * 10, // 10 years
+    });
+    
+    console.log('Subscribers saved to cookie');
   } catch (error) {
-    console.error('Error saving subscribers to file:', error);
+    console.error('Error saving subscribers to cookie:', error);
   }
 }
 
-function loadSubscribersFromFile() {
+// Load subscribers from cookie
+function loadSubscribersFromCookie(): Array<{ email: string; created_at: string }> {
   try {
-    if (fs.existsSync(STORAGE_FILE)) {
-      const data = fs.readFileSync(STORAGE_FILE, 'utf8');
-      const subscribers = JSON.parse(data);
+    const cookieStore = cookies();
+    const subscribersCookie = cookieStore.get(SUBSCRIBERS_COOKIE);
+    
+    if (subscribersCookie && subscribersCookie.value) {
+      const subscribers = JSON.parse(subscribersCookie.value);
+      console.log(`Loaded ${subscribers.length} subscribers from cookie`);
+      return subscribers;
+    }
+  } catch (error) {
+    console.error('Error loading subscribers from cookie:', error);
+  }
+  
+  return [];
+}
+
+// Initialize in-memory subscribers from cookie in production
+function initSubscribersFromCookie() {
+  try {
+    if (isProduction) {
+      const subscribers = loadSubscribersFromCookie();
       
-      // Convert to Map
       inMemorySubscribers = new Map();
       subscribers.forEach((sub: { email: string; created_at: string }) => {
         inMemorySubscribers.set(sub.email, sub);
       });
       
-      console.log(`Loaded ${subscribers.length} subscribers from file`);
+      console.log(`Initialized ${subscribers.length} subscribers from cookie`);
     }
   } catch (error) {
-    console.error('Error loading subscribers from file:', error);
+    console.error('Error initializing subscribers from cookie:', error);
   }
 }
 
@@ -76,8 +102,8 @@ if (!isProduction) {
     db = null;
   }
 } else {
-  // In production, try to load data from file
-  loadSubscribersFromFile();
+  // In production, initialize from cookie
+  initSubscribersFromCookie();
 }
 
 // Add a subscriber to the newsletter
@@ -85,20 +111,28 @@ export function addNewsletterSubscriber(email: string): { success: boolean; mess
   try {
     // Use in-memory storage in production or if SQLite failed to initialize
     if (isProduction || !db) {
+      // Initialize from cookie first
+      if (isProduction) {
+        initSubscribersFromCookie();
+      }
+      
       // Check if already exists
       if (inMemorySubscribers.has(email)) {
         return { success: false, message: 'Dit e-mailadres is al aangemeld' };
       }
       
+      // Add to in-memory map
       inMemorySubscribers.set(email, { 
         email, 
         created_at: new Date().toISOString() 
       });
       
-      // Save to file for persistence
-      saveSubscribersToFile();
+      // Save to cookie for persistence
+      if (isProduction) {
+        saveSubscribersToCookie(Array.from(inMemorySubscribers.values()));
+      }
       
-      console.log(`Newsletter subscriber added in-memory: ${email}`);
+      console.log(`Newsletter subscriber added: ${email}`);
       return { success: true, message: 'Subscription successful' };
     } else {
       // Use SQLite in development
@@ -120,10 +154,11 @@ export function addNewsletterSubscriber(email: string): { success: boolean; mess
 export function isSubscribed(email: string): boolean {
   try {
     if (isProduction || !db) {
-      // Try to load fresh data first
+      // Initialize from cookie in production
       if (isProduction) {
-        loadSubscribersFromFile();
+        initSubscribersFromCookie();
       }
+      
       return inMemorySubscribers.has(email);
     } else {
       const stmt = db.prepare('SELECT email FROM newsletter_subscribers WHERE email = ?');
@@ -140,10 +175,11 @@ export function isSubscribed(email: string): boolean {
 export function getAllSubscribers(): { email: string; created_at: string }[] {
   try {
     if (isProduction || !db) {
-      // Try to load fresh data first in production
+      // Initialize from cookie in production
       if (isProduction) {
-        loadSubscribersFromFile();
+        initSubscribersFromCookie();
       }
+      
       return Array.from(inMemorySubscribers.values());
     } else {
       const stmt = db.prepare('SELECT email, created_at FROM newsletter_subscribers ORDER BY created_at DESC');
@@ -159,11 +195,18 @@ export function getAllSubscribers(): { email: string; created_at: string }[] {
 export function deleteSubscriber(email: string): { success: boolean; message: string } {
   try {
     if (isProduction || !db) {
+      // Initialize from cookie in production
+      if (isProduction) {
+        initSubscribersFromCookie();
+      }
+      
       if (inMemorySubscribers.has(email)) {
         inMemorySubscribers.delete(email);
         
-        // Save changes to file
-        saveSubscribersToFile();
+        // Save changes to cookie
+        if (isProduction) {
+          saveSubscribersToCookie(Array.from(inMemorySubscribers.values()));
+        }
         
         return { success: true, message: 'Subscriber deleted successfully' };
       } else {

@@ -6,7 +6,10 @@ export async function GET(request: NextRequest) {
     // In a real application, you would add authentication here
     // to verify the request is coming from an admin
     
+    // Get all subscribers using our updated function
     const subscribers = getAllSubscribers();
+    
+    console.log(`Admin API: Found ${subscribers.length} subscribers`);
     
     return NextResponse.json(
       { success: true, subscribers },
